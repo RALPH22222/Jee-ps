@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -14,7 +14,7 @@ const DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 const jeepIcon = new L.Icon({
-    iconUrl: 'https://cdn-icons-png.freepik.com/256/15303/15303815.png?semt=ais_white_label', 
+    iconUrl: 'https://cdn-icons-png.freepik.com/256/15303/15303815.png?semt=ais_white_label',
     iconSize: [40, 40],
     iconAnchor: [20, 20],
     popupAnchor: [0, -20],
@@ -22,12 +22,7 @@ const jeepIcon = new L.Icon({
 });
 
 
-const passengerIcon = new L.Icon({
-    iconUrl: 'https://cdn-icons-png.flaticon.com/512/9131/9131546.png', 
-    iconAnchor: [17, 35],
-    popupAnchor: [0, -35],
-    className: 'passenger-marker'
-});
+
 
 
 function ActiveJeepList({ jeeps, selectedJeep, onClose }: { jeeps: Jeep[], selectedJeep: Jeep | null, onClose: () => void }) {
@@ -63,7 +58,7 @@ function ActiveJeepList({ jeeps, selectedJeep, onClose }: { jeeps: Jeep[], selec
                         <button
                             onClick={() => {
                                 setIsOpen(false);
-                                onClose(); 
+                                onClose();
                             }}
                             className="text-gray-400 hover:text-gray-600 transition-colors"
                         >
@@ -102,7 +97,7 @@ function ActiveJeepList({ jeeps, selectedJeep, onClose }: { jeeps: Jeep[], selec
 
                                 <button
                                     onClick={() => {
-                                        setIsOpen(true); 
+                                        setIsOpen(true);
                                         onClose();
                                     }}
                                     className="w-full py-2 text-sm text-gray-500 hover:text-teal-600 underline"
@@ -151,6 +146,13 @@ function ActiveJeepList({ jeeps, selectedJeep, onClose }: { jeeps: Jeep[], selec
 function LocationMarker() {
     const map = useMap();
     const [position, setPosition] = useState<[number, number] | null>(null);
+    const [zoom, setZoom] = useState(map.getZoom());
+
+    useMapEvents({
+        zoomend: () => {
+            setZoom(map.getZoom());
+        }
+    });
 
     useEffect(() => {
         map.locate().on("locationfound", function (e) {
@@ -159,8 +161,19 @@ function LocationMarker() {
         });
     }, [map]);
 
+    // Calculate dynamic icon size (Smaller when zoomed out)
+    const size = Math.max(15, Math.min(50, zoom * 2.5));
+
+    const dynamicPassengerIcon = new L.Icon({
+        iconUrl: 'https://cdn-icons-png.flaticon.com/512/9131/9131546.png',
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size],
+        popupAnchor: [0, -size],
+        className: 'passenger-marker'
+    });
+
     return position === null ? null : (
-        <Marker position={position} icon={passengerIcon}>
+        <Marker position={position} icon={dynamicPassengerIcon}>
             <Popup>You are here</Popup>
         </Marker>
     );
