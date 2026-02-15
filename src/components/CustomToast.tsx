@@ -9,7 +9,7 @@ interface CustomToastProps {
 export const CustomToast = ({ t, message, type }: CustomToastProps) => {
     return (
         <div
-            className={`${t.visible ? 'animate-enter' : 'animate-leave'
+            className={`${t.visible ? 'toast-animate-enter' : 'toast-animate-leave'
                 } max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5 relative overflow-hidden`}
         >
             <div className="flex-1 w-0 p-4">

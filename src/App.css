@@ -1,28 +1,47 @@
 @import "tailwindcss";
 
 @keyframes progress {
-  from { width: 100%; }
-  to { width: 0%; }
+    from {
+        width: 100%;
+    }
+
+    to {
+        width: 0%;
+    }
 }
 
 .animate-progress {
-  animation: progress 3000ms linear forwards;
+    animation: progress 3000ms linear forwards;
 }
 
-.animate-enter {
-  animation: enter 0.2s ease-out;
+.toast-animate-enter {
+    animation: toast-enter 0.2s ease-out;
 }
 
-.animate-leave {
-  animation: leave 0.1s ease-in forwards;
+.toast-animate-leave {
+    animation: toast-leave 0.1s ease-in forwards;
 }
 
-@keyframes enter {
-  0% { transform: scale(0.9); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+@keyframes toast-enter {
+    0% {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
-@keyframes leave {
-  0% { transform: scale(1); opacity: 1; }
-  100% { transform: scale(0.9); opacity: 0; }
+@keyframes toast-leave {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(0.9);
+        opacity: 0;
+    }
 }
