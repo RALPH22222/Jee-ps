@@ -12,19 +12,7 @@ const DefaultIcon = L.icon({
     iconSize: [25, 41],
     iconAnchor: [12, 41]
 });
-
 L.Marker.prototype.options.icon = DefaultIcon;
-const jeepIcon = new L.Icon({
-    iconUrl: 'https://cdn-icons-png.freepik.com/256/15303/15303815.png?semt=ais_white_label',
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
-    popupAnchor: [0, -20],
-    className: 'jeep-marker'
-});
-
-
-
-
 
 interface Route {
     route_name: string;
@@ -51,239 +39,323 @@ interface SavedJeep {
     jeeps: Jeep;
 }
 
+function getBearing(startLat: number, startLng: number, destLat: number, destLng: number) {
+    const startLatRad = startLat * (Math.PI / 180);
+    const startLngRad = startLng * (Math.PI / 180);
+    const destLatRad = destLat * (Math.PI / 180);
+    const destLngRad = destLng * (Math.PI / 180);
+
+    const y = Math.sin(destLngRad - startLngRad) * Math.cos(destLatRad);
+    const x = Math.cos(startLatRad) * Math.sin(destLatRad) -
+        Math.sin(startLatRad) * Math.cos(destLatRad) * Math.cos(destLngRad - startLngRad);
+
+    const brng = Math.atan2(y, x);
+    const brngDeg = (brng * 180) / Math.PI;
+    return (brngDeg + 360) % 360;
+}
+
+const ICON_ROTATION_OFFSET = -45;
+
+function JeepMarker({ jeep, onClick }: { jeep: Jeep, onClick: () => void }) {
+    const [prevPos, setPrevPos] = useState<[number, number] | null>(null);
+    const [bearing, setBearing] = useState(0);
+
+    useEffect(() => {
+        let newBearing = bearing;
+        let bearingUpdated = false;
+        if (prevPos) {
+            const dist = Math.sqrt(
+                Math.pow(jeep.current_latitude - prevPos[0], 2) +
+                Math.pow(jeep.current_longitude - prevPos[1], 2)
+            );
+
+            if (dist > 0.000005) {
+                newBearing = getBearing(prevPos[0], prevPos[1], jeep.current_latitude, jeep.current_longitude);
+                bearingUpdated = true;
+            }
+        }
+
+        if (bearingUpdated) {
+            setBearing(newBearing);
+        }
+
+        setPrevPos([jeep.current_latitude, jeep.current_longitude]);
+
+    }, [jeep.current_latitude, jeep.current_longitude]);
+
+    const finalRotation = (bearing + ICON_ROTATION_OFFSET) % 360;
+
+    const icon = L.divIcon({
+        className: 'jeep-marker-container',
+        html: `<div style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;">
+                 <img src="/jeep-marker.png" style="transform: rotate(${finalRotation}deg); width: 45px; height: 45px; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); transition: transform 0.3s ease-in-out;" />
+               </div>`,
+        iconSize: [45, 45],
+        iconAnchor: [22.5, 22.5],
+        popupAnchor: [0, -22.5]
+    });
+
+    return (
+        <Marker
+            position={[jeep.current_latitude, jeep.current_longitude]}
+            icon={icon}
+            eventHandlers={{ click: onClick }}
+        />
+    );
+}
+
 function ActiveJeepList({
     jeeps,
     savedJeeps,
     selectedJeep,
+    isOpen,
+    setIsOpen,
     onClose,
     onSelectJeep,
     onSaveJeep,
-    onUnsaveJeep,
-    onViewRoute
+    onUnsaveJeep
 }: {
     jeeps: Jeep[],
     savedJeeps: SavedJeep[],
     selectedJeep: Jeep | null,
+    isOpen: boolean,
+    setIsOpen: (isOpen: boolean) => void,
     onClose: () => void,
     onSelectJeep: (jeep: Jeep) => void,
     onSaveJeep: (jeep: Jeep) => void,
-    onUnsaveJeep: (jeepId: string) => void,
-    onViewRoute: (jeep: Jeep) => void
+    onUnsaveJeep: (jeepId: string) => void
 }) {
-    const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'active' | 'saved'>('active');
     const isSidebarVisible = isOpen || !!selectedJeep;
 
     const isJeepSaved = (jeepId: string) => savedJeeps.some(sj => sj.jeep_id === jeepId);
+    const handleOverlayClick = () => {
+        setIsOpen(false);
+        onClose();
+    };
 
     return (
         <>
-            <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
+            {!isSidebarVisible && (
                 <button
-                    onClick={() => { setIsOpen(true); setActiveTab('active'); }}
-                    className="bg-white text-[#008282] p-3 rounded-full shadow-lg border border-gray-200 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#008282] transition-all"
-                    aria-label="View Active Jeeps"
+                    onClick={() => setIsOpen(true)}
+                    className="absolute top-4 right-4 z-[1000] bg-white text-[#008282] p-3 rounded-xl shadow-lg border border-gray-200 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-[#008282] transition-all flex items-center gap-2 group"
+                    aria-label="Open Menu"
                 >
                     <div className="relative">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M8 6v6" /><path d="M15 6v6" /><path d="M2 12h19.6" />
-                            <path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3" />
-                            <circle cx="7" cy="18" r="2" /><path d="M9 18h5" /><circle cx="16" cy="18" r="2" />
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
                         </svg>
-                        {jeeps.length > 0 && (
+                        {(jeeps.length > 0 || savedJeeps.length > 0) && (
                             <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">
-                                {jeeps.length}
+                                {jeeps.length + savedJeeps.length}
                             </span>
                         )}
                     </div>
+                    <span className="font-semibold text-sm hidden group-hover:block transition-all duration-300">Menu</span>
                 </button>
-                <button
-                    onClick={() => { setIsOpen(true); setActiveTab('saved'); }}
-                    className="bg-white text-[#008282] p-3 rounded-full shadow-lg border border-gray-200 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#008282] transition-all"
-                    aria-label="View Saved Jeeps"
-                >
-                    <div className="relative">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                        </svg>
-                        {savedJeeps.length > 0 && (
-                            <span className="absolute -top-2 -right-2 bg-teal-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">
-                                {savedJeeps.length}
-                            </span>
-                        )}
-                    </div>
-                </button>
-            </div>
-
-            <div className={`absolute inset-y-0 right-0 w-80 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-[1001] ${isSidebarVisible ? 'translate-x-0' : 'translate-x-full'}`}>
-                <div className="p-4 h-full flex flex-col">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-bold text-[#006868]">
-                            {selectedJeep ? 'Jeep Details' : (activeTab === 'active' ? 'Active Jeeps' : 'Saved Jeeps')}
-                        </h2>
-                        <button
-                            onClick={() => {
-                                setIsOpen(false);
-                                onClose();
-                            }}
-                            className="text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M18 6 6 18" /><path d="m6 6 12 12" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    {!selectedJeep && (
-                        <div className="flex mb-4 border-b border-gray-200">
-                            <button
-                                className={`flex-1 py-2 text-sm font-medium ${activeTab === 'active' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-500 hover:text-gray-700'}`}
-                                onClick={() => setActiveTab('active')}
-                            >
-                                Active
-                            </button>
-                            <button
-                                className={`flex-1 py-2 text-sm font-medium ${activeTab === 'saved' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-500 hover:text-gray-700'}`}
-                                onClick={() => setActiveTab('saved')}
-                            >
-                                Saved
-                            </button>
-                        </div>
-                    )}
-
-                    <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+            )}
+            {isSidebarVisible && (
+                <div
+                    className="fixed inset-0 bg-black/20 z-[1000] backdrop-blur-sm sm:hidden transition-opacity"
+                    onClick={handleOverlayClick}
+                />
+            )}
+            <div className={`fixed inset-y-0 right-0 w-full sm:w-96 bg-white/95 backdrop-blur-md shadow-2xl transform transition-transform duration-300 ease-in-out z-[1001] flex flex-col ${isSidebarVisible ? 'translate-x-0' : 'translate-x-full'}`}>
+                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-white/50">
+                    <h2 className="text-xl font-bold text-[#006868] flex items-center gap-2">
                         {selectedJeep ? (
-                            <div className="space-y-4">
-                                <div className="bg-teal-50 p-6 rounded-xl border border-teal-100 text-center relative">
-                                    <button
-                                        onClick={() => isJeepSaved(selectedJeep.jeep_id) ? onUnsaveJeep(selectedJeep.jeep_id) : onSaveJeep(selectedJeep)}
-                                        className="absolute top-2 right-2 p-2 rounded-full hover:bg-teal-100 transition-colors"
-                                        title={isJeepSaved(selectedJeep.jeep_id) ? "Unsave Jeep" : "Save Jeep"}
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill={isJeepSaved(selectedJeep.jeep_id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-teal-600">
-                                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                                        </svg>
-                                    </button>
-                                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm text-3xl">
-                                        🚐
-                                    </div>
-                                    <h3 className="text-2xl font-bold text-[#006868]">{selectedJeep.plate_number}</h3>
-                                    <p className="text-sm text-gray-500">{selectedJeep.routes?.route_name || 'Taguig Transport Loop'}</p>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                        <p className="text-xs text-gray-500 uppercase">Passengers</p>
-                                        <p className={`text-lg font-bold ${selectedJeep.current_passenger_count >= selectedJeep.max_capacity
-                                            ? 'text-red-500'
-                                            : 'text-green-600'
-                                            }`}>
-                                            {selectedJeep.current_passenger_count}/{selectedJeep.max_capacity}
-                                        </p>
-                                    </div>
-                                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                        <p className="text-xs text-gray-500 uppercase">Status</p>
-                                        <p className="text-lg font-bold text-teal-600">Active</p>
-                                    </div>
-                                </div>
-
-                                <button
-                                    onClick={() => onViewRoute(selectedJeep)}
-                                    className="w-full flex items-center justify-center gap-2 py-3 bg-teal-600 text-white rounded-xl shadow-md hover:bg-teal-700 transition-all font-semibold"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
-                                        <line x1="8" y1="2" x2="8" y2="18"></line>
-                                        <line x1="16" y1="6" x2="16" y2="22"></line>
-                                    </svg>
-                                    View Route
-                                </button>
-
-                                <button
-                                    onClick={() => {
-                                        setIsOpen(true);
-                                        onClose();
-                                    }}
-                                    className="w-full py-2 text-sm text-gray-500 hover:text-teal-600 underline"
-                                >
-                                    Back to list
-                                </button>
+                            <div className="flex items-center gap-2">
+                                <button onClick={onClose} className="hover:bg-gray-100 p-1 rounded-full"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg></button>
+                                <span>Jeep Details</span>
                             </div>
                         ) : (
-                            activeTab === 'active' ? (
+                            <>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0121 18.382V7.618a1 1 0 01-1.447-.894L15 7m0 13V7m0 0L9 7" />
+                                </svg>
+                                <span>Transport Map</span>
+                            </>
+                        )}
+                    </h2>
+                    <button
+                        onClick={() => {
+                            setIsOpen(false);
+                            onClose();
+                        }}
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+
+                {!selectedJeep && (
+                    <div className="flex p-2 gap-2 bg-gray-50/50">
+                        <button
+                            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${activeTab === 'active'
+                                ? 'bg-white text-teal-600 shadow-sm ring-1 ring-black/5'
+                                : 'text-gray-500 hover:bg-white/50 hover:text-gray-700'}`}
+                            onClick={() => setActiveTab('active')}
+                        >
+                            Active Jeeps
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'active' ? 'bg-teal-100 text-teal-700' : 'bg-gray-200 text-gray-600'}`}>
+                                {jeeps.length}
+                            </span>
+                        </button>
+                        <button
+                            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${activeTab === 'saved'
+                                ? 'bg-white text-teal-600 shadow-sm ring-1 ring-black/5'
+                                : 'text-gray-500 hover:bg-white/50 hover:text-gray-700'}`}
+                            onClick={() => setActiveTab('saved')}
+                        >
+                            Saved
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'saved' ? 'bg-teal-100 text-teal-700' : 'bg-gray-200 text-gray-600'}`}>
+                                {savedJeeps.length}
+                            </span>
+                        </button>
+                    </div>
+                )}
+
+                {/* Content Area */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/30">
+                    {selectedJeep ? (
+                        <div className="space-y-6 animate-fadeIn">
+                            {/* Jeep Detail Card */}
+                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-400 to-emerald-500"></div>
+                                <button
+                                    onClick={() => isJeepSaved(selectedJeep.jeep_id) ? onUnsaveJeep(selectedJeep.jeep_id) : onSaveJeep(selectedJeep)}
+                                    className={`absolute top-4 right-4 p-2 rounded-full transition-all ${isJeepSaved(selectedJeep.jeep_id) ? 'bg-teal-50 text-teal-600' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}
+                                    title={isJeepSaved(selectedJeep.jeep_id) ? "Unsave Jeep" : "Save Jeep"}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill={isJeepSaved(selectedJeep.jeep_id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                </button>
+
+                                <div className="w-20 h-20 bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner text-4xl">
+                                    🚐
+                                </div>
+                                <h3 className="text-3xl font-bold text-gray-800 tracking-tight">{selectedJeep.plate_number}</h3>
+                                <div className="flex items-center justify-center gap-2 mt-2 text-sm text-gray-500 bg-gray-100/50 py-1 px-3 rounded-full mx-auto w-fit">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    {selectedJeep.routes?.route_name || 'Taguig Transport Loop'}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Passengers</p>
+                                    <div className="flex items-end gap-1">
+                                        <span className={`text-2xl font-bold ${selectedJeep.current_passenger_count >= selectedJeep.max_capacity ? 'text-red-500' : 'text-emerald-600'}`}>
+                                            {selectedJeep.current_passenger_count}
+                                        </span>
+                                        <span className="text-gray-400 text-sm mb-1">/ {selectedJeep.max_capacity}</span>
+                                    </div>
+                                    <div className="w-full bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                                        <div
+                                            className={`h-full rounded-full ${selectedJeep.current_passenger_count >= selectedJeep.max_capacity ? 'bg-red-500' : 'bg-emerald-500'}`}
+                                            style={{ width: `${Math.min(100, (selectedJeep.current_passenger_count / selectedJeep.max_capacity) * 100)}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Status</p>
+                                    <div className="flex items-center gap-2">
+                                        <span className="relative flex h-3 w-3">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                                        </span>
+                                        <p className="text-lg font-bold text-gray-700">Active</p>
+                                    </div>
+                                    <p className="text-xs text-gray-400 mt-2">Last update: Just now</p>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {activeTab === 'active' ? (
                                 jeeps.length === 0 ? (
-                                    <div className="text-center text-gray-500 mt-10">
-                                        <p>No active jeeps found.</p>
+                                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-300">
+                                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                                        </div>
+                                        <p className="text-gray-500 font-medium">No active jeeps nearby</p>
+                                        <p className="text-xs text-gray-400 mt-1">Please check back later</p>
                                     </div>
                                 ) : (
                                     jeeps.map((jeep) => (
                                         <div
                                             key={jeep.jeep_id}
                                             onClick={() => onSelectJeep(jeep)}
-                                            className="bg-gray-50 p-4 rounded-xl border border-gray-100 hover:border-[#008282]/30 transition-colors cursor-pointer"
+                                            className="group bg-white p-4 rounded-xl border border-gray-100 hover:border-teal-400 hover:shadow-md transition-all cursor-pointer relative overflow-hidden"
                                         >
-                                            <div className="flex justify-between items-start mb-2">
-                                                <div>
-                                                    <h3 className="font-bold text-gray-800">{jeep.plate_number}</h3>
-                                                    <p className="text-xs text-gray-500">{jeep.routes?.route_name || 'Taguig Loop'}</p>
+                                            <div className="flex justify-between items-start mb-2 relative z-10">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center text-lg">🚐</div>
+                                                    <div>
+                                                        <h3 className="font-bold text-gray-800 group-hover:text-teal-700 transition-colors">{jeep.plate_number}</h3>
+                                                        <p className="text-xs text-gray-500">{jeep.routes?.route_name || 'Taguig Loop'}</p>
+                                                    </div>
                                                 </div>
-                                                <div className={`px-2 py-1 rounded text-xs font-bold ${jeep.current_passenger_count >= jeep.max_capacity
-                                                    ? 'bg-red-100 text-red-600'
-                                                    : 'bg-green-100 text-green-600'
+                                                <div className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${jeep.current_passenger_count >= jeep.max_capacity
+                                                    ? 'bg-red-50 text-red-600 border-red-100'
+                                                    : 'bg-emerald-50 text-emerald-600 border-emerald-100'
                                                     }`}>
                                                     {jeep.current_passenger_count}/{jeep.max_capacity}
                                                 </div>
-                                            </div>
-                                            <div className="text-xs text-gray-400 flex items-center gap-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                </svg>
-                                                Updated just now
                                             </div>
                                         </div>
                                     ))
                                 )
                             ) : (
                                 savedJeeps.length === 0 ? (
-                                    <div className="text-center text-gray-500 mt-10">
-                                        <p>No saved jeeps.</p>
+                                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-300">
+                                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                                        </div>
+                                        <p className="text-gray-500 font-medium">No saved jeeps yet</p>
+                                        <p className="text-xs text-gray-400 mt-1">Star a jeep to see it here</p>
                                     </div>
                                 ) : (
                                     savedJeeps.map((saved) => (
                                         <div
                                             key={saved.id}
                                             onClick={() => onSelectJeep(saved.jeeps)}
-                                            className="bg-teal-50/50 p-4 rounded-xl border border-teal-100 hover:border-teal-300 transition-colors cursor-pointer"
+                                            className="group bg-white p-4 rounded-xl border border-gray-100 hover:border-teal-400 hover:shadow-md transition-all cursor-pointer"
                                         >
                                             <div className="flex justify-between items-start mb-2">
-                                                <div>
-                                                    <h3 className="font-bold text-gray-800">{saved.jeeps.plate_number}</h3>
-                                                    <p className="text-xs text-gray-500">{saved.jeeps.routes?.route_name || 'Taguig Loop'}</p>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center text-yellow-500">⭐</div>
+                                                    <div>
+                                                        <h3 className="font-bold text-gray-800">{saved.jeeps.plate_number}</h3>
+                                                        <p className="text-xs text-gray-500">{saved.jeeps.routes?.route_name || 'Taguig Loop'}</p>
+                                                    </div>
                                                 </div>
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         onUnsaveJeep(saved.jeeps.jeep_id);
                                                     }}
-                                                    className="text-gray-400 hover:text-red-500"
-                                                    title="Remove"
+                                                    className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                                                    title="Remove from saved"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                                                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                                                        <path d="M18 6 6 18" /><path d="m6 6 12 12" />
                                                     </svg>
                                                 </button>
-                                            </div>
-                                            <div className="text-xs text-teal-600 font-medium">
-                                                Saved Jeep
                                             </div>
                                         </div>
                                     ))
                                 )
-                            )
-                        )}
-                    </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
         </>
@@ -308,7 +380,6 @@ function LocationMarker() {
         });
     }, [map]);
 
-    // Calculate dynamic icon size (Smaller when zoomed out)
     const size = Math.max(15, Math.min(50, zoom * 2.5));
 
     const dynamicPassengerIcon = new L.Icon({
@@ -331,7 +402,7 @@ function LocateButton() {
 
     const handleLocate = () => {
         map.locate().on("locationfound", function (e) {
-            map.flyTo(e.latlng, map.getZoom());
+            map.flyTo(e.latlng, 18); // Zoom level 18
         });
     };
 
@@ -349,15 +420,21 @@ function LocateButton() {
     );
 }
 
-
-
-
+function MapClickHandler({ onMapClick }: { onMapClick: () => void }) {
+    useMapEvents({
+        click: () => {
+            onMapClick();
+        },
+    });
+    return null;
+}
 
 export default function PassengerMap() {
     const [jeeps, setJeeps] = useState<Jeep[]>([]);
     const [selectedJeep, setSelectedJeep] = useState<Jeep | null>(null);
     const [savedJeeps, setSavedJeeps] = useState<SavedJeep[]>([]);
     const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const fetchSavedJeeps = async () => {
         const userStr = localStorage.getItem('user');
@@ -420,15 +497,13 @@ export default function PassengerMap() {
         }
     };
 
-    const handleViewRoute = async (jeep: Jeep) => {
-        console.log("handleViewRoute called with:", jeep);
+    const showRoute = async (jeep: Jeep) => {
+        console.log("showRoute called with:", jeep);
         if (!jeep.routes) {
             console.warn("No route information in jeep object:", jeep);
-            alert("No route information available for this jeep.");
             return;
         }
         const { origin_latitude, origin_longitude, destination_latitude, destination_longitude } = jeep.routes;
-        console.log("Route coordinates:", { origin_latitude, origin_longitude, destination_latitude, destination_longitude });
 
         // Validate coordinates
         const isValidLat = (lat: number) => lat >= -90 && lat <= 90;
@@ -437,12 +512,10 @@ export default function PassengerMap() {
         if (!isValidLat(origin_latitude) || !isValidLng(origin_longitude) ||
             !isValidLat(destination_latitude) || !isValidLng(destination_longitude)) {
             console.warn("Invalid route coordinates:", { origin_latitude, origin_longitude, destination_latitude, destination_longitude });
-            alert("Route coordinates are invalid. Please check the database.");
             return;
         }
 
         if (!origin_latitude || !destination_latitude) {
-            // If coords are missing but we have a name, we can't map it easily without geocoding.
             console.warn("Incomplete route coordinates");
             return;
         }
@@ -452,16 +525,11 @@ export default function PassengerMap() {
             console.log("Fetching route from:", url);
             const response = await fetch(url);
             const data = await response.json();
-            console.log("OSRM response:", data);
 
             if (data.routes && data.routes.length > 0) {
-                // OSRM returns [lon, lat], Leaflet needs [lat, lon]
                 const coords = data.routes[0].geometry.coordinates.map((coord: number[]) => [coord[1], coord[0]] as [number, number]);
-                console.log("Parsed route coordinates:", coords);
                 setRouteCoordinates(coords);
             } else {
-                console.warn("No routes found in OSRM response, using straight line.");
-                // Fallback to straight line if OSRM fails to find route
                 setRouteCoordinates([
                     [origin_latitude, origin_longitude],
                     [destination_latitude, destination_longitude]
@@ -496,6 +564,16 @@ export default function PassengerMap() {
     }, []);
 
     const defaultCenter: [number, number] = [6.912676, 122.064889];
+    const handleMapClick = () => {
+        setRouteCoordinates([]);
+        setSelectedJeep(null);
+        setIsSidebarOpen(false);
+    };
+
+    const onSelectJeep = (jeep: Jeep) => {
+        setSelectedJeep(jeep);
+        showRoute(jeep);
+    };
 
     return (
         <div className="h-screen w-full relative flex flex-col">
@@ -503,14 +581,12 @@ export default function PassengerMap() {
                 jeeps={jeeps}
                 savedJeeps={savedJeeps}
                 selectedJeep={selectedJeep}
+                isOpen={isSidebarOpen}
+                setIsOpen={setIsSidebarOpen}
                 onClose={() => setSelectedJeep(null)}
-                onSelectJeep={(jeep) => {
-                    setSelectedJeep(jeep);
-                    // optionally view route logic here immediately if desired
-                }}
+                onSelectJeep={onSelectJeep}
                 onSaveJeep={handleSaveJeep}
                 onUnsaveJeep={handleUnsaveJeep}
-                onViewRoute={handleViewRoute}
             />
 
             <MapContainer
@@ -527,21 +603,14 @@ export default function PassengerMap() {
 
                 <LocationMarker />
                 <LocateButton />
+                <MapClickHandler onMapClick={handleMapClick} />
 
                 {jeeps.map((jeep) => (
-                    <Marker
+                    <JeepMarker
                         key={jeep.jeep_id}
-                        position={[jeep.current_latitude, jeep.current_longitude]}
-                        icon={jeepIcon}
-                        eventHandlers={{
-                            click: () => {
-                                setSelectedJeep(jeep);
-                                // If we want to show route on click:
-                                // handleViewRoute(jeep); 
-                            },
-                        }}
-                    >
-                    </Marker>
+                        jeep={jeep}
+                        onClick={() => onSelectJeep(jeep)}
+                    />
                 ))}
 
                 {routeCoordinates.length > 0 && (
@@ -559,8 +628,11 @@ export default function PassengerMap() {
                 .leaflet-popup-tip {
                     background: white;
                 }
+                .jeep-marker-container {
+                    background: none;
+                    border: none;
+                }
             `}</style>
-
         </div>
     );
 }
