@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import logo from '../assets/logo.png';
 import brandingBg from '../assets/branding-bg.jpg';
 import { API_URL } from '../config';
@@ -65,7 +65,6 @@ export default function Login() {
 
     return (
         <div className="min-h-screen flex font-sans animate-fade-in">
-            <Toaster position="top-right" reverseOrder={false} toastOptions={{ duration: 3000 }} />
             {/* Left Side - Branding (Image Background) */}
             <div
                 className="hidden md:flex md:w-1/2 flex-col justify-center items-center p-8 relative overflow-hidden bg-cover bg-center bg-no-repeat"

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import logo from '../assets/logo.png';
 import brandingBg from '../assets/branding-bg.jpg';
 import { API_URL } from '../config';
@@ -64,7 +64,6 @@ export default function Register() {
 
     return (
         <div className="min-h-screen flex font-sans animate-fade-in">
-            <Toaster position="top-right" reverseOrder={false} />
 
             {/* Left Side - Form (Now Teal Gradient) */}
             <div className="w-full md:w-1/2 bg-gradient-to-br from-[#008282] to-[#004d4d] flex items-center justify-center p-8 md:p-12 relative overflow-y-auto">

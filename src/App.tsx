@@ -1,5 +1,6 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Toaster, toast } from 'react-hot-toast';
+import { useEffect } from 'react';
 import Login from './auth/login';
 import PassengerMap from './pages/passenger/map';
 import AdminDashboard from './pages/admin/dashboard';
@@ -18,6 +19,11 @@ const AdminLayout = () => (
   </div>
 );
 function App() {
+  const location = useLocation();
+
+  useEffect(() => {
+    toast.dismiss();
+  }, [location]);
 
   return (
     <>
