@@ -216,16 +216,17 @@ export default function JeepRegistration() {
                         <div className="mt-6">
                             <label className="block text-sm font-medium text-gray-700 mb-2">Route Definition (Start & End Points)</label>
                             <p className="text-sm text-gray-500 mb-3">Click on the map to set the Start Point (Green) and End Point (Red).</p>
-                            <div className="h-96 w-full rounded-xl overflow-hidden border border-gray-300 z-0">
+                            <div className="h-96 w-full rounded-xl overflow-hidden border border-gray-300 z-0 relative">
                                 <MapContainer
                                     center={defaultCenter}
                                     zoom={13}
                                     scrollWheelZoom={true}
                                     className="h-full w-full z-0"
+                                    zoomControl={false}
                                 >
                                     <TileLayer
-                                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                                        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                                     />
                                     <MapClickHandler setOrigin={setOrigin} setDestination={setDestination} origin={origin} destination={destination} />
 
@@ -270,6 +271,15 @@ export default function JeepRegistration() {
                     </form>
                 </div>
             </div>
+            <style>{`
+                .leaflet-popup-content-wrapper {
+                    border-radius: 12px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                }
+                .leaflet-popup-tip {
+                    background: white;
+                }
+            `}</style>
         </div>
     );
 }
