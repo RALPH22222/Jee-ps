@@ -720,7 +720,7 @@ export default function PassengerMap() {
         return () => clearInterval(interval);
     }, []);
 
-    const defaultCenter: [number, number] = [6.912676, 122.064889];
+    const defaultCenter: [number, number] = [14.5289151, 121.0673473];
     const handleMapClick = () => {
         setRouteCoordinates([]);
         setSelectedJeep(null);
