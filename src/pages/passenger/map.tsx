@@ -31,6 +31,10 @@ interface Jeep {
     max_capacity: number;
     route_id?: number;
     routes?: Route;
+    driver_name?: string;
+    fare?: number;
+    speed?: number; // km/h
+    last_update?: number; // timestamp
 }
 
 interface SavedJeep {
@@ -52,6 +56,19 @@ function getBearing(startLat: number, startLng: number, destLat: number, destLng
     const brng = Math.atan2(y, x);
     const brngDeg = (brng * 180) / Math.PI;
     return (brngDeg + 360) % 360;
+}
+
+function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const d = R * c; // Distance in km
+    return d;
 }
 
 const ICON_ROTATION_OFFSET = -45;
@@ -113,7 +130,8 @@ function ActiveJeepList({
     onClose,
     onSelectJeep,
     onSaveJeep,
-    onUnsaveJeep
+    onUnsaveJeep,
+    userPosition
 }: {
     jeeps: Jeep[],
     savedJeeps: SavedJeep[],
@@ -123,7 +141,8 @@ function ActiveJeepList({
     onClose: () => void,
     onSelectJeep: (jeep: Jeep) => void,
     onSaveJeep: (jeep: Jeep) => void,
-    onUnsaveJeep: (jeepId: string) => void
+    onUnsaveJeep: (jeepId: string) => void,
+    userPosition: [number, number] | null
 }) {
     const [activeTab, setActiveTab] = useState<'active' | 'saved'>('active');
     const isSidebarVisible = isOpen || !!selectedJeep;
@@ -238,13 +257,65 @@ function ActiveJeepList({
                                     </svg>
                                 </button>
 
-                                <div className="w-20 h-20 bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner text-4xl">
-                                    🚐
+                                <div className="w-20 h-20 bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+                                    <img src="/jeep-marker.png" alt="Jeep" className="w-16 h-16 object-contain" />
                                 </div>
                                 <h3 className="text-3xl font-bold text-gray-800 tracking-tight">{selectedJeep.plate_number}</h3>
                                 <div className="flex items-center justify-center gap-2 mt-2 text-sm text-gray-500 bg-gray-100/50 py-1 px-3 rounded-full mx-auto w-fit">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                     {selectedJeep.routes?.route_name || 'Taguig Transport Loop'}
+                                </div>
+
+                                <div className="mt-4 grid grid-cols-2 gap-2 text-left bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                    <div>
+                                        <p className="text-xs text-gray-400 uppercase font-bold">Driver</p>
+                                        <p className="font-semibold text-gray-700 truncate">{selectedJeep.driver_name || 'Unassigned'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-400 uppercase font-bold">Fare</p>
+                                        <p className="font-semibold text-gray-700">₱{selectedJeep.fare || 12}</p>
+                                    </div>
+                                    {userPosition && (
+                                        <>
+                                            <div>
+                                                <p className="text-xs text-gray-400 uppercase font-bold">Distance</p>
+                                                <p className="font-semibold text-gray-700">
+                                                    {getDistance(
+                                                        userPosition[0],
+                                                        userPosition[1],
+                                                        selectedJeep.current_latitude,
+                                                        selectedJeep.current_longitude
+                                                    ).toFixed(1)} km
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-400 uppercase font-bold">Est. Time</p>
+                                                <p className="font-semibold text-gray-700">
+                                                    {(() => {
+                                                        const speed = selectedJeep.speed || 0;
+                                                        const distance = getDistance(
+                                                            userPosition[0],
+                                                            userPosition[1],
+                                                            selectedJeep.current_latitude,
+                                                            selectedJeep.current_longitude
+                                                        );
+
+                                                        if (speed < 1) return "Stopped"; // If speed < 1 km/h, consider it stopped
+
+                                                        const timeHours = distance / speed;
+                                                        const timeMins = Math.ceil(timeHours * 60);
+
+                                                        if (timeMins > 60) {
+                                                            const h = Math.floor(timeMins / 60);
+                                                            const m = timeMins % 60;
+                                                            return `${h} hr ${m} min`;
+                                                        }
+                                                        return `${timeMins} mins`;
+                                                    })()}
+                                                </p>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
 
@@ -297,7 +368,9 @@ function ActiveJeepList({
                                         >
                                             <div className="flex justify-between items-start mb-2 relative z-10">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center text-lg">🚐</div>
+                                                    <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center">
+                                                        <img src="/jeep-marker.png" alt="Jeep" className="w-8 h-8 object-contain" />
+                                                    </div>
                                                     <div>
                                                         <h3 className="font-bold text-gray-800 group-hover:text-teal-700 transition-colors">{jeep.plate_number}</h3>
                                                         <p className="text-xs text-gray-500">{jeep.routes?.route_name || 'Taguig Loop'}</p>
@@ -362,7 +435,7 @@ function ActiveJeepList({
     );
 }
 
-function LocationMarker() {
+function LocationMarker({ onLocationUpdate }: { onLocationUpdate: (pos: [number, number]) => void }) {
     const map = useMap();
     const [position, setPosition] = useState<[number, number] | null>(null);
     const [zoom, setZoom] = useState(map.getZoom());
@@ -375,7 +448,9 @@ function LocationMarker() {
 
     useEffect(() => {
         map.locate().on("locationfound", function (e) {
-            setPosition([e.latlng.lat, e.latlng.lng]);
+            const newPos: [number, number] = [e.latlng.lat, e.latlng.lng];
+            setPosition(newPos);
+            onLocationUpdate(newPos);
             map.flyTo(e.latlng, map.getZoom());
         });
     }, [map]);
@@ -435,6 +510,7 @@ export default function PassengerMap() {
     const [savedJeeps, setSavedJeeps] = useState<SavedJeep[]>([]);
     const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
 
     const fetchSavedJeeps = async () => {
         const userStr = localStorage.getItem('user');
@@ -549,10 +625,46 @@ export default function PassengerMap() {
             try {
                 const response = await fetch(`${API_URL}/passenger/locations`);
                 if (!response.ok) throw new Error('Failed to fetch jeeps');
-                const data = await response.json();
-                if (data.length > 0) {
-                    setJeeps(data);
-                }
+                const data: Jeep[] = await response.json();
+                const now = Date.now();
+
+                setJeeps(prevJeeps => {
+                    return data.map(newJeep => {
+                        const prevJeep = prevJeeps.find(p => p.jeep_id === newJeep.jeep_id);
+                        let speed = 0;
+
+                        if (prevJeep && prevJeep.last_update) {
+                            const dist = getDistance(
+                                prevJeep.current_latitude,
+                                prevJeep.current_longitude,
+                                newJeep.current_latitude,
+                                newJeep.current_longitude
+                            ); // distance in km
+
+                            const timeDiff = (now - prevJeep.last_update) / 1000 / 3600; // time in hours
+
+                            if (timeDiff > 0 && dist > 0.00001) { // Ignore tiny movements (gps jitter)
+                                speed = dist / timeDiff;
+                            } else if (dist <= 0.00001) {
+                                speed = 0;
+                            } else {
+                                speed = prevJeep.speed || 0; // Maintain previous speed if timeDiff is 0 (shouldn't happen often)
+                            }
+                        }
+
+                        // Smoothing: simple moving average or just take current (User asked for "from one update to another")
+                        // Let's stick to raw calculated speed but maybe cap it or damp it if needed.
+                        // For better UX, if speed is 0, we might want to default to a 'walking' or 'average' speed for ETA if it was moving recently,
+                        // but strictly "calculated speed" means 0 -> Infinity ETA.
+                        // Let's assume if moving < 1 km/h, it is stopped.
+
+                        return {
+                            ...newJeep,
+                            speed: speed,
+                            last_update: now
+                        };
+                    });
+                });
             } catch (error) {
                 console.error("Error fetching jeeps:", error);
             }
@@ -587,6 +699,7 @@ export default function PassengerMap() {
                 onSelectJeep={onSelectJeep}
                 onSaveJeep={handleSaveJeep}
                 onUnsaveJeep={handleUnsaveJeep}
+                userPosition={userPosition}
             />
 
             <MapContainer
@@ -601,7 +714,7 @@ export default function PassengerMap() {
                     url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                 />
 
-                <LocationMarker />
+                <LocationMarker onLocationUpdate={setUserPosition} />
                 <LocateButton />
                 <MapClickHandler onMapClick={handleMapClick} />
 

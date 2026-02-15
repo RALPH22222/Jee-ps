@@ -68,6 +68,7 @@ export default function JeepRegistration() {
     const [routeName, setRouteName] = useState('');
     const [macAddress, setMacAddress] = useState('');
     const [maxCapacity, setMaxCapacity] = useState('20');
+    const [fare, setFare] = useState('12');
 
     // Map State
     const [origin, setOrigin] = useState<{ lat: number; lng: number } | null>(null);
@@ -106,7 +107,8 @@ export default function JeepRegistration() {
                     origin_lng: origin?.lng,
                     destination_lat: destination?.lat,
                     destination_lng: destination?.lng,
-                    max_capacity: parseInt(maxCapacity)
+                    max_capacity: parseInt(maxCapacity),
+                    fare: parseFloat(fare)
                 })
             });
 
@@ -124,6 +126,7 @@ export default function JeepRegistration() {
             setRouteName('');
             setMacAddress('');
             setMaxCapacity('20');
+            setFare('12');
             setOrigin(null);
             setDestination(null);
 
@@ -196,6 +199,19 @@ export default function JeepRegistration() {
                                     onChange={(e) => setDriverName(e.target.value)}
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all"
                                     placeholder="Enter Driver Name"
+                                />
+                            </div>
+
+                            {/* Fare */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Fare (PHP)</label>
+                                <input
+                                    type="number"
+                                    value={fare}
+                                    onChange={(e) => setFare(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all"
+                                    placeholder="e.g. 12"
+                                    required
                                 />
                             </div>
 
