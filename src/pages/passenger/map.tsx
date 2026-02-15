@@ -73,6 +73,13 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
 
 const ICON_ROTATION_OFFSET = -45;
 
+function getJeepIcon(current: number, max: number) {
+    const percentage = (current / max) * 100;
+    if (percentage >= 100) return '/red-jeep-marker.png';
+    if (percentage > 70) return '/yellow-jeep-marker.png';
+    return '/jeep-marker.png';
+}
+
 function JeepMarker({ jeep, onClick }: { jeep: Jeep, onClick: () => void }) {
     const [prevPos, setPrevPos] = useState<[number, number] | null>(null);
     const [bearing, setBearing] = useState(0);
@@ -101,11 +108,12 @@ function JeepMarker({ jeep, onClick }: { jeep: Jeep, onClick: () => void }) {
     }, [jeep.current_latitude, jeep.current_longitude]);
 
     const finalRotation = (bearing + ICON_ROTATION_OFFSET) % 360;
+    const iconUrl = getJeepIcon(jeep.current_passenger_count, jeep.max_capacity);
 
     const icon = L.divIcon({
         className: 'jeep-marker-container',
         html: `<div style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;">
-                 <img src="/jeep-marker.png" style="transform: rotate(${finalRotation}deg); width: 45px; height: 45px; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); transition: transform 0.3s ease-in-out;" />
+                 <img src="${iconUrl}" style="transform: rotate(${finalRotation}deg); width: 45px; height: 45px; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); transition: transform 0.3s ease-in-out;" />
                </div>`,
         iconSize: [45, 45],
         iconAnchor: [22.5, 22.5],
@@ -258,7 +266,7 @@ function ActiveJeepList({
                                 </button>
 
                                 <div className="w-20 h-20 bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
-                                    <img src="/jeep-marker.png" alt="Jeep" className="w-16 h-16 object-contain" />
+                                    <img src={getJeepIcon(selectedJeep.current_passenger_count, selectedJeep.max_capacity)} alt="Jeep" className="w-16 h-16 object-contain" />
                                 </div>
                                 <h3 className="text-3xl font-bold text-gray-800 tracking-tight">{selectedJeep.plate_number}</h3>
                                 <div className="flex items-center justify-center gap-2 mt-2 text-sm text-gray-500 bg-gray-100/50 py-1 px-3 rounded-full mx-auto w-fit">
@@ -369,7 +377,7 @@ function ActiveJeepList({
                                             <div className="flex justify-between items-start mb-2 relative z-10">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center">
-                                                        <img src="/jeep-marker.png" alt="Jeep" className="w-8 h-8 object-contain" />
+                                                        <img src={getJeepIcon(jeep.current_passenger_count, jeep.max_capacity)} alt="Jeep" className="w-8 h-8 object-contain" />
                                                     </div>
                                                     <div>
                                                         <h3 className="font-bold text-gray-800 group-hover:text-teal-700 transition-colors">{jeep.plate_number}</h3>
@@ -492,6 +500,43 @@ function LocateButton() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
             </svg>
         </button>
+    );
+}
+
+function JeepLegend() {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className="absolute bottom-24 right-4 z-[1000] flex flex-col items-end gap-2">
+            <div
+                className={`transition-all duration-300 ease-in-out overflow-hidden flex flex-col gap-2 ${isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}
+            >
+                <div className="bg-white p-3 rounded-xl shadow-lg border border-gray-100 flex items-center gap-3">
+                    <img src="/jeep-marker.png" className="w-8 h-8 object-contain" />
+                    <span className="text-sm font-medium text-gray-600 whitespace-nowrap">0% - 70% Passenger</span>
+                </div>
+                <div className="bg-white p-3 rounded-xl shadow-lg border border-gray-100 flex items-center gap-3">
+                    <img src="/yellow-jeep-marker.png" className="w-8 h-8 object-contain" />
+                    <span className="text-sm font-medium text-gray-600 whitespace-nowrap">71% - 99% Passenger</span>
+                </div>
+                <div className="bg-white p-3 rounded-xl shadow-lg border border-gray-100 flex items-center gap-3">
+                    <img src="/red-jeep-marker.png" className="w-8 h-8 object-contain" />
+                    <span className="text-sm font-medium text-gray-600 whitespace-nowrap">Full (100%)</span>
+                </div>
+            </div>
+
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="bg-white text-[#008282] p-2 rounded-full shadow-lg border border-gray-200 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#008282] transition-all flex flex-col items-center gap-1 h-14 justify-center w-14"
+                title="Legend"
+            >
+                <div className="flex -space-x-2">
+                    <img src="/jeep-marker.png" className="w-5 h-5 object-contain" />
+                    <img src="/yellow-jeep-marker.png" className="w-5 h-5 object-contain" />
+                </div>
+                <img src="/red-jeep-marker.png" className="w-5 h-5 object-contain -mt-1" />
+            </button>
+        </div>
     );
 }
 
@@ -715,6 +760,7 @@ export default function PassengerMap() {
                 />
 
                 <LocationMarker onLocationUpdate={setUserPosition} />
+                <JeepLegend />
                 <LocateButton />
                 <MapClickHandler onMapClick={handleMapClick} />
 
