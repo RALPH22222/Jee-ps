@@ -5,6 +5,7 @@ import Login from './auth/login';
 import PassengerMap from './pages/passenger/map';
 import AdminDashboard from './pages/admin/dashboard';
 import Register from './auth/register';
+import UpdatePassword from './pages/UpdatePassword';
 import Sidebar from './components/sidebar';
 import JeepRegistration from './pages/admin/JeepRegistration';
 import UserManagement from './pages/admin/UserManagement';
@@ -32,6 +33,7 @@ function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/update-password" element={<UpdatePassword />} />
         <Route path="/passenger/map" element={<PassengerMap />} />
         <Route path="/admin" element={<AdminLayout />}>
           <Route path="dashboard" element={<AdminDashboard />} />

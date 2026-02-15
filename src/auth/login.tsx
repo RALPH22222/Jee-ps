@@ -11,6 +11,12 @@ export default function Login() {
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+
+    // Forgot Password State
+    const [showForgotPassword, setShowForgotPassword] = useState(false);
+    const [resetEmail, setResetEmail] = useState('');
+    const [isResetLoading, setIsResetLoading] = useState(false);
+
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -60,6 +66,40 @@ export default function Login() {
             ), { duration: 3000 });
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleForgotPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsResetLoading(true);
+
+        try {
+            const response = await fetch(`${API_URL}/auth/forgot-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: resetEmail }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to send reset email');
+            }
+
+            toast.custom((t) => (
+                <CustomToast t={t} message="Password reset email sent!" type="success" />
+            ), { duration: 3000 });
+
+            setShowForgotPassword(false);
+            setResetEmail('');
+        } catch (err: any) {
+            toast.custom((t) => (
+                <CustomToast t={t} message={err.message || 'Failed to send reset email'} type="error" />
+            ), { duration: 3000 });
+        } finally {
+            setIsResetLoading(false);
         }
     };
 
@@ -145,12 +185,13 @@ export default function Login() {
                                     >
                                         Password
                                     </label>
-                                    <a
-                                        href="#"
-                                        className="text-sm font-medium text-teal-200 hover:text-white transition-colors underline-offset-2 hover:underline"
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowForgotPassword(true)}
+                                        className="text-sm font-medium text-teal-200 hover:text-white transition-colors underline-offset-2 hover:underline focus:outline-none"
                                     >
                                         Forgot password?
-                                    </a>
+                                    </button>
                                 </div>
                                 <input
                                     id="password"
@@ -198,6 +239,70 @@ export default function Login() {
                     </form>
                 </div>
             </div>
+
+            {/* Forgot Password Modal */}
+            {showForgotPassword && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-[#004d4d] border border-teal-700/50 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-scale-in">
+                        <div className="p-6 md:p-8">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-2xl font-bold text-white">Reset Password</h3>
+                                <button
+                                    onClick={() => setShowForgotPassword(false)}
+                                    className="text-teal-200 hover:text-white transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <p className="text-teal-100 mb-6">
+                                Enter your email address and we'll send you a link to reset your password.
+                            </p>
+
+                            <form onSubmit={handleForgotPassword} className="space-y-6">
+                                <div className="group">
+                                    <label
+                                        htmlFor="reset-email"
+                                        className="block text-sm font-semibold text-teal-50 mb-1"
+                                    >
+                                        Email Address
+                                    </label>
+                                    <input
+                                        id="reset-email"
+                                        type="email"
+                                        required
+                                        disabled={isResetLoading}
+                                        className="w-full px-4 py-3 rounded-lg border border-transparent bg-black/20 text-white placeholder-teal-200/50 focus:outline-none focus:ring-2 focus:ring-teal-400/50 focus:bg-black/30 transition-all"
+                                        placeholder="Enter your email"
+                                        value={resetEmail}
+                                        onChange={(e) => setResetEmail(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowForgotPassword(false)}
+                                        disabled={isResetLoading}
+                                        className="flex-1 py-3 px-4 rounded-xl border border-teal-600 text-teal-100 font-semibold hover:bg-teal-800/50 transition-colors disabled:opacity-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isResetLoading}
+                                        className="flex-1 py-3 px-4 rounded-xl shadow-lg bg-teal-500 hover:bg-teal-400 text-white font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-wait"
+                                    >
+                                        {isResetLoading ? 'Sending...' : 'Send Link'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
