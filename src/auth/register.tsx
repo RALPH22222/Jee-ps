@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import logo from '../assets/logo.png';
+import { API_URL } from '../config';
 
 export default function Register() {
     const [firstName, setFirstName] = useState('');
@@ -18,7 +19,7 @@ export default function Register() {
         setError('');
 
         try {
-            const response = await fetch('https://jee-ps-server.onrender.com/auth/register', {
+            const response = await fetch(`${API_URL}/auth/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -198,11 +199,11 @@ export default function Register() {
                                     Already have an account?
                                 </span>
                                 <a href="/login" className="font-semibold text-[#006868] hover:text-[#008282] transition-colors flex items-center justify-center gap-2 group">
-                                <span>Sign in instead</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 transition-transform group-hover:translate-x-1">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-                                </svg>
-                            </a>
+                                    <span>Sign in instead</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 transition-transform group-hover:translate-x-1">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                                    </svg>
+                                </a>
                             </div>
                         </div>
                     </form>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import logo from '../assets/logo.png';
+import { API_URL } from '../config';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -16,7 +17,7 @@ export default function Login() {
         setError('');
 
         try {
-            const response = await fetch('https://jee-ps-server.onrender.com/auth/login', {
+            const response = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -34,7 +35,7 @@ export default function Login() {
 
             toast.success('Login Successful!');
             setTimeout(() => {
-                const userRole = data.user?.user_metadata?.role || data.user?.role; 
+                const userRole = data.user?.user_metadata?.role || data.user?.role;
 
                 if (userRole === 'admin') {
                     navigate('/admin/dashboard');
@@ -177,11 +178,11 @@ export default function Login() {
                                     Don't have an account?
                                 </span>
                                 <a href="/register" className="font-semibold text-[#006868] hover:text-[#008282] transition-colors flex items-center justify-center gap-2 group">
-                                <span>Create an account</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 transition-transform group-hover:translate-x-1">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-                                </svg>
-                            </a>
+                                    <span>Create an account</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 transition-transform group-hover:translate-x-1">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                                    </svg>
+                                </a>
                             </div>
                         </div>
                     </form>
