@@ -36,6 +36,13 @@ export default function Sidebar() {
                     Jeep Registration
                 </Link>
 
+                <Link to="/admin/jeeps" className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${isActive('/admin/jeeps')}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    Jeep Management
+                </Link>
+
                 <Link to="/admin/users" className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${isActive('/admin/users')}`}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -58,4 +65,3 @@ export default function Sidebar() {
         </div>
     );
 }
-    

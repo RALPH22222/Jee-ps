@@ -8,6 +8,7 @@ import Register from './auth/register';
 import UpdatePassword from './pages/UpdatePassword';
 import Sidebar from './components/sidebar';
 import JeepRegistration from './pages/admin/JeepRegistration';
+import JeepManagement from './pages/admin/JeepManagement';
 import UserManagement from './pages/admin/UserManagement';
 import { Outlet } from 'react-router-dom';
 
@@ -38,6 +39,7 @@ function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="register-jeep" element={<JeepRegistration />} />
+          <Route path="jeeps" element={<JeepManagement />} />
           <Route path="users" element={<UserManagement />} />
         </Route>
       </Routes>
