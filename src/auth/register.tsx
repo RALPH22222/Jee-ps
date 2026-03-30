@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import logo from '../assets/logo.png';
-import brandingBg from '../assets/branding-bg.jpg';
+import side from '../assets/side.png';
 import { API_URL } from '../config';
 import { CustomToast } from '../components/CustomToast';
 
@@ -63,10 +62,10 @@ export default function Register() {
     };
 
     return (
-        <div className="min-h-screen flex font-sans animate-fade-in">
+        <div className="min-h-screen h-screen flex font-sans animate-fade-in bg-gradient-to-br from-[#008282] to-[#004d4d]">
 
             {/* Left Side - Form (Now Teal Gradient) */}
-            <div className="w-full md:w-1/2 bg-gradient-to-br from-[#008282] to-[#004d4d] flex items-center justify-center p-8 md:p-12 relative overflow-y-auto">
+            <div className="w-full md:w-1/2 flex items-center justify-center p-8 md:p-12 relative overflow-y-auto">
                 <div className="w-full max-w-md space-y-8 animate-fade-in-up">
                     <div className="text-center md:text-left">
                         <h2 className="text-3xl font-bold text-white tracking-tight">
@@ -194,28 +193,9 @@ export default function Register() {
                 </div>
             </div>
 
-            {/* Right Side - Branding (Image Background) */}
-            <div
-                className="hidden md:flex md:w-1/2 flex-col justify-center items-center p-8 relative overflow-hidden bg-cover bg-center bg-no-repeat"
-                style={{ backgroundImage: `url(${brandingBg})` }}
-            >
-                <div className="absolute inset-0"></div>
-
-                <div className="relative z-10 text-center animate-fade-in-up">
-                    <div className="mb-8 inline-flex items-center justify-center w-48 h-48 transition-transform hover:scale-105 duration-300 p-2">
-                        <img src={logo} alt="Jee-ps Logo" className="w-full h-full object-contain drop-shadow-xl" />
-                    </div>
-                    <h1 className="text-5xl md:text-6xl font-extrabold tracking-tighter mb-4 drop-shadow-sm text-transparent bg-clip-text bg-gradient-to-r from-teal-700 to-teal-900">
-                        Jee-ps
-                    </h1>
-                    <p className="text-xl md:text-2xl text-gray-800 font-light max-w-sm mx-auto leading-relaxed tracking-wide drop-shadow-sm font-medium">
-                        Official Jeep Seat Monitoring System for Taguig City
-                    </p>
-                </div>
-
-                <div className="absolute bottom-8 text-xs text-gray-600 font-semibold tracking-widest uppercase z-10">
-                    © 2026 Taguig City Transport
-                </div>
+            {/* Right Side - Branding (Image) */}
+            <div className="hidden md:flex md:w-1/2 h-screen items-center justify-end relative overflow-hidden">
+                <img src={side} alt="Jee-ps Branding" className="w-full h-full object-contain" />
             </div>
         </div>
     );
