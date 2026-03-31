@@ -138,7 +138,7 @@ export default function JeepRegistration() {
         }
     };
 
-    const defaultCenter: [number, number] = [14.5378, 121.0414];
+    const defaultCenter: [number, number] = [16.6159, 120.3167]; // San Fernando, La Union
 
     return (
         <div className="flex-1 p-8 ml-64 bg-gray-50 min-h-screen font-sans">
